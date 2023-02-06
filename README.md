@@ -6,6 +6,14 @@
 ANTM: An Aligned Neural Topic Model for Exploring Evolving Topics
 
 
+## Installation
+
+Installation can be done using:
+
+```bash
+pip install requirements.txt
+```
+
 ## Quick Start
 As implemented in the notebook, We start extracting evolving topics from DBLP dataset containing computer science articles:
 
