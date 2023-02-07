@@ -5,6 +5,7 @@
 # ANTM
 ANTM: An Aligned Neural Topic Model for Exploring Evolving Topics
 
+![alt text](https://github.com/hamedR96/ANTM/blob/main/diagram_Twitter.png?raw=true)
 
  Dynamic topic models are effective methods that primarily focus on studying the evolution of topics present in a collection of documents. These models are widely used for understanding trends, exploring public opinion in social networks, or tracking research progress and discoveries in scientific archives. Since topics are defined as clusters of semantically similar documents, it is necessary to observe the changes in the content or themes of these clusters in order to understand how topics evolve as new knowledge is discovered over time. Here, we introduce a dynamic neural topic model called ANTM, which uses document embeddings (data2vec) to compute clusters of semantically similar documents at different periods, and aligns document clusters to represent their evolution. This alignment procedure preserves the temporal similarity of document clusters over time and captures the semantic change of words characterized by their context within different periods. Experiments on four different datasets show that ANTM outperforms probabilistic dynamic topic models (e.g. DTM, DETM) and significantly improves topic coherence and diversity over other existing dynamic neural topic models (e.g. BERTopic).
 
