@@ -11,10 +11,10 @@ def aligned_umap(arg1_umap,arg2_umap,n_neighbors=20,umap_dimension_size=5):
     model_umap_clustering = umap.aligned_umap.AlignedUMAP(
     metric="cosine",
     n_neighbors=n_neighbors,
-    #alignment_regularisation=0.1,
+    alignment_regularisation=0.1,
     alignment_window_size=umap_dimension_size,
-    #n_epochs=200,
-    #random_state=42,
+    n_epochs=200,
+    random_state=42,
     ).fit(arg1_umap, relations = arg2_umap)
 
     umap_embeddings_clustering=[]
@@ -26,10 +26,10 @@ def aligned_umap(arg1_umap,arg2_umap,n_neighbors=20,umap_dimension_size=5):
     model_umap_visualization = umap.aligned_umap.AlignedUMAP(
     metric="cosine",
     n_neighbors=n_neighbors,
-    #alignment_regularisation=0.1,
+    alignment_regularisation=0.1,
     alignment_window_size=2,
-    #n_epochs=200,
-    #random_state=42,
+    n_epochs=200,
+    random_state=42,
     ).fit(arg1_umap, relations = arg2_umap)
     umap_embeddings_visulization=[]
     for j in model_umap_visualization.embeddings_:
