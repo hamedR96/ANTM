@@ -19,7 +19,7 @@ pip install requirements.txt
 ```
 
 ## Quick Start
-As implemented in the notebook, We start extracting evolving topics from DBLP dataset containing computer science articles:
+As implemented in the notebook, We can quickly start extracting evolving topics from DBLP dataset containing computer science articles:
 
 ```python
 import pandas as pd
@@ -33,10 +33,21 @@ overlap=1
 
 evolving_topics=ANTM(df,overlap,window_size,mode="data2vec",num_words=10)
 ```
+## Datasets
+[Arxiv articles](https://www.kaggle.com/datasets/Cornell-University/arxiv)
+
+[DBLP articles](https://nuage.lip6.fr/s/FLKwdzcsbqYMkat)
+
+[Elon Musk's Tweets](https://nuage.lip6.fr/s/XKkcWLAiDiykZ4D)
+
+[New York Times News](https://nuage.lip6.fr/s/XKkcWLAiDiykZ4D)
+
+## Experiments
+You can use the notebooks provided in "./experiments" in order to run ANTM on other sequential datasets. 
 
 
 ## Citation
-To cite the [ANTM_Paper](https://arxiv.org/abs/2302.01501), please use the following bibtex reference:
+To cite [ANTM](https://arxiv.org/abs/2302.01501), please use the following bibtex reference:
 ```bibtext
 @misc{rahimi2023antm,
       title={ANTM: An Aligned Neural Topic Model for Exploring Evolving Topics}, 
