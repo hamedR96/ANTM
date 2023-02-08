@@ -1,5 +1,5 @@
+import os
 import umap
-import pickle
 import hdbscan
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -21,8 +21,7 @@ def aligned_umap(arg1_umap,arg2_umap,n_neighbors=20,umap_dimension_size=5):
     for j in model_umap_clustering.embeddings_:
         umap_embeddings_clustering.append(pd.DataFrame(j))
 
-    with open("./results/umap/umap_embeddings_clustering", "wb") as fp:   #Pickling
-        pickle.dump(umap_embeddings_clustering, fp)
+
     model_umap_visualization = umap.aligned_umap.AlignedUMAP(
     metric="cosine",
     n_neighbors=n_neighbors,
@@ -34,8 +33,6 @@ def aligned_umap(arg1_umap,arg2_umap,n_neighbors=20,umap_dimension_size=5):
     umap_embeddings_visulization=[]
     for j in model_umap_visualization.embeddings_:
         umap_embeddings_visulization.append(pd.DataFrame(j))
-    with open("./results/umap/umap_embeddings_visualization", "wb") as fp:   #Pickling
-        pickle.dump(umap_embeddings_visulization, fp)
 
     return umap_embeddings_clustering,umap_embeddings_visulization
 
@@ -47,14 +44,17 @@ def hdbscan_cluster(embedding, size) :
         clusters.append(c)
     return clusters
 
-def draw_cluster(cluster,umap,name):
+def draw_cluster(cluster,umap,name,show_2d_plot,path):
     labels = cluster.labels_
     data=umap
     data = data.assign(C=labels)
     data=data[data["C"]>-1]
-    plt.figure(figsize=(15, 10))
+    fig = plt.figure(figsize=(15, 10))
     plt.scatter(data[0], data[1], c=data["C"], cmap='Paired')
-    plt.savefig("./results/partioned_clusters/"+name+'.png')
+    if not os.path.exists(path+"/results/partioned_clusters"): os.mkdir(path+"/results/partioned_clusters")
+    plt.savefig(path+"/results/partioned_clusters/"+name+'.png')
+    if not show_2d_plot:
+        plt.close(fig)
     plt.show()
 
 def clustered_df(slices,clusters):
@@ -108,12 +108,18 @@ def alignment_procedure(dt,concat_cent,umap_n_neighbor=2,umap_n_components=5,min
 
 
 
-def plot_alignment(df_tm,umap_embeddings_visualization,clusters):
+def plot_alignment(df_tm,umap_embeddings_visualization,clusters,path):
     tm = df_tm[["window_num", "cluster_num", "C"]]
     tm["name"] = tm.apply(lambda row: str(row["window_num"]) + "-" + str(row["cluster_num"]), axis=1)
     tm = tm[tm["C"] != -1]
     tm = tm.groupby("C")["name"].apply(list).reset_index()
     list_tm = list(tm["name"])
+    #with open("./results/all_topic_evolution.txt", "w") as output:
+        #for et in list_tm:
+            #output.write("\n")
+            #for topic in et:
+                #output.write(str(topic) + "\s")
+
     ccs_list=[]
     for i in range(len(list_tm)):
         #print(i)
@@ -140,5 +146,5 @@ def plot_alignment(df_tm,umap_embeddings_visualization,clusters):
     fig.update_layout(width=1000, height=1000)
 
     fig.show()
-    fig.write_image("./results/aligned_clusters/fig_3D.png")
-    return list_tm
+    fig.write_image(path+"/results/fig_3D.png")
+    return(list_tm)

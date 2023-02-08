@@ -1,4 +1,4 @@
-
+[![PyPI - PyPi](https://img.shields.io/pypi/v/antm)](https://pypi.org/project/antm/)
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://hamedrahimi.fr)
 [![arXiv](https://img.shields.io/badge/arXiv-2302.01501-<COLOR>.svg)](https://arxiv.org/abs/2302.01501)
 
@@ -21,38 +21,40 @@ pip install antm
 ## Quick Start
 As implemented in the notebook, we can quickly start extracting evolving topics from DBLP dataset containing computer science articles.
 ### To Fit and Save a Model
+
 ```python
-import antm
+from antm import ANTM
 import pandas as pd
 
-#load data
-df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_1K.parquet")
-df=df[["abstract","year"]].rename(columns={"abstract":"content","year":"time"}).dropna().reset_index()
+# load data
+df = pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_1K.parquet")
+df = df[["abstract", "year"]].rename(columns={"abstract": "content", "year": "time"}).dropna().reset_index()
 
-#choosing the windows size and overlapping length for time frames
-window_size=3
-overlap=1
+# choosing the windows size and overlapping length for time frames
+window_size = 3
+overlap = 1
 
-#initialize model
-model=ANTM(df,overlap,window_size,mode="data2vec",num_words=10,path="./saved_data")
+# initialize model
+model = ANTM(df, overlap, window_size, mode="data2vec", num_words=10, path="./saved_data")
 
-#learn the model and save it
+# learn the model and save it
 model.fit(save=True)
 ```
 ### To Load a Model
+
 ```python
-import antm
+from antm import ANTM
 import pandas as pd
 
-#load data
-df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_1K.parquet")
-df=df[["abstract","year"]].rename(columns={"abstract":"content","year":"time"}).dropna().reset_index()
+# load data
+df = pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_1K.parquet")
+df = df[["abstract", "year"]].rename(columns={"abstract": "content", "year": "time"}).dropna().reset_index()
 
-window_size=3
-overlap=1
+window_size = 3
+overlap = 1
 
-#initialize the model for loading
-model=ANTM(df,overlap,window_size,mode="data2vec",num_words=10,path="./saved_data")
+# initialize the model for loading
+model = ANTM(df, overlap, window_size, mode="data2vec", num_words=10, path="./saved_data")
 model.load()
 ```
 ### Plug-and-Play Functions

@@ -25,4 +25,3 @@ def data2vec_embedding(sentence):
         print("Summarizing a document with BART due to its Large length for Embedding...")
         new_sentences=summarizer(sentence, max_length=512, do_sample=False)[0]["summary_text"]
         return(data2vec_embedding(new_sentences))
-

@@ -27,7 +27,7 @@ def slice_df(df, t1, t2, w, o):
     while slice_end < t2:
         slice_num+=1
         #print(slice_start,slice_end)
-        slice = df[(df['year'] >= slice_start) & (df['year'] < slice_end)]
+        slice = df[(df['time'] >= slice_start) & (df['time'] < slice_end)]
         slice["slice_num"]=slice_num
         slices.append(slice)
         slice_start += w - o
@@ -48,7 +48,7 @@ def relations_periodes(list_list_id) :
     return L
 
 def sws(df_embedded,overlap,window_length):
-    df_triple = [list(x) for x in zip(df_embedded.year.tolist(), df_embedded.index.tolist(), df_embedded.embedding.tolist())]
+    df_triple = [list(x) for x in zip(df_embedded.time.tolist(), df_embedded.index.tolist(), df_embedded.embedding.tolist())]
     slices=slice_df(df_embedded, df_triple[0][0],  df_triple[len(df_triple)-1][0], window_length,overlap)
     sliced_list_doc_vect, sliced_list_id = slice_by_year(df_triple,df_triple[0][0],
                                                                df_triple[len(df_triple)-1][0],window_length,overlap)
