@@ -25,15 +25,16 @@ As implemented in the notebook, we can quickly start extracting evolving topics 
 import antm
 import pandas as pd
 
-df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_10K.parquet")
-df=df[["abstract","year"]].dropna().reset_index()
+#load data
+df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_1K.parquet")
+df=df[["abstract","year"]].rename(columns={"abstract":"content","year":"time"}).dropna().reset_index()
 
 #choosing the windows size and overlapping length for time frames
 window_size=3
 overlap=1
 
 #initialize model
-model=antm.ANTM(df,overlap,window_size,mode="data2vec",num_words=10)
+model=ANTM(df,overlap,window_size,mode="data2vec",num_words=10,path="./saved_data")
 
 #learn the model and save it
 model.fit(save=True)
@@ -43,14 +44,15 @@ model.fit(save=True)
 import antm
 import pandas as pd
 
-df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_10K.parquet")
-df=df[["abstract","year"]].dropna().reset_index()
+#load data
+df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_1K.parquet")
+df=df[["abstract","year"]].rename(columns={"abstract":"content","year":"time"}).dropna().reset_index()
 
 window_size=3
 overlap=1
 
 #initialize the model for loading
-model=antm.ANTM(df,overlap,window_size,mode="data2vec",num_words=10)
+model=ANTM(df,overlap,window_size,mode="data2vec",num_words=10,path="./saved_data")
 model.load()
 ```
 ### Plug-and-Play Functions
