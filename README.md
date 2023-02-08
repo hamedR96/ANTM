@@ -15,15 +15,33 @@ ANTM: An Aligned Neural Topic Model for Exploring Evolving Topics
 Installation can be done using:
 
 ```bash
-pip install requirements.txt
+pip install antm
 ```
 
 ## Quick Start
-As implemented in the notebook, We can quickly start extracting evolving topics from DBLP dataset containing computer science articles:
-
+As implemented in the notebook, we can quickly start extracting evolving topics from DBLP dataset containing computer science articles.
+### To Fit and Save a Model
 ```python
+import antm
 import pandas as pd
-from models.antm import ANTM
+
+df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_10K.parquet")
+df=df[["abstract","year"]].dropna().reset_index()
+
+#choosing the windows size and overlapping length for time frames
+window_size=3
+overlap=1
+
+#initialize model
+model=antm.ANTM(df,overlap,window_size,mode="data2vec",num_words=10)
+
+#learn the model and save it
+model.fit(save=True)
+```
+### To Load a Model
+```python
+import antm
+import pandas as pd
 
 df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_10K.parquet")
 df=df[["abstract","year"]].dropna().reset_index()
@@ -31,7 +49,23 @@ df=df[["abstract","year"]].dropna().reset_index()
 window_size=3
 overlap=1
 
-evolving_topics=ANTM(df,overlap,window_size,mode="data2vec",num_words=10)
+#initialize the model for loading
+model=antm.ANTM(df,overlap,window_size,mode="data2vec",num_words=10)
+model.load()
+```
+### Plug-and-Play Functions
+```python
+#find all the evolving topics
+model.save_evolution_topics_plots(display=False)
+
+#plots a random evolving topic with 2-dimensional document representations
+model.random_evolution_topic()
+
+#plots partioned clusters for each time frame
+model.plot_clusters_over_time()
+
+#plots all the evolving topics
+model.plot_evolving_topics()
 ```
 ## Datasets
 [Arxiv articles](https://www.kaggle.com/datasets/Cornell-University/arxiv)
