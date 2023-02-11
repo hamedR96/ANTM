@@ -13,7 +13,7 @@ from antm.contextual_embedding_layer import contextual_embedding
 from antm.topic_representation_layer import rep_prep, text_processing,ctfidf_rp, topic_evolution
 
 class ANTM:
-    def __init__(self, df, overlap, window_length, mode="data2vec", umap_dimension_size=5, umap_n_neighbors=5,
+    def __init__(self, df, overlap, window_length, mode="data2vec", umap_dimension_size=5, umap_n_neighbors=15,
                  partioned_clusttering_size=5, num_words=10, show_2d_plot=False,path=os.getcwd()):
         self.df = df
         self.overlap = overlap

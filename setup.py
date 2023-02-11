@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='antm',
-    version='0.0.13',
+    version='0.0.14',
     author='Hamed Rahimi',
     author_email='<hamed.rahimi@sorbonne-universite.fr',
     description='Aligned Neural Topic Model for Exploring Evolving Topics',

@@ -7,7 +7,7 @@ import plotly.express as px
 import numpy as np
 
 
-def aligned_umap(arg1_umap,arg2_umap,n_neighbors=20,umap_dimension_size=5):
+def aligned_umap(arg1_umap,arg2_umap,n_neighbors=15,umap_dimension_size=5):
     model_umap_clustering = umap.aligned_umap.AlignedUMAP(
     metric="cosine",
     n_neighbors=n_neighbors,
@@ -38,30 +38,31 @@ def aligned_umap(arg1_umap,arg2_umap,n_neighbors=20,umap_dimension_size=5):
 
 
 def hdbscan_cluster(embedding, size) :
-    clusters = []
+    clusters_labels = []
+    c= hdbscan.HDBSCAN(min_cluster_size=size, metric = "euclidean",cluster_selection_method = "eom")
     for e in range(len(embedding)) :
-        c = hdbscan.HDBSCAN(min_cluster_size=size, metric = "euclidean",cluster_selection_method = "eom").fit(embedding[e])
-        clusters.append(c)
-    return clusters
+        c.fit(embedding[e])
+        clusters_labels.append(c.labels_)
+    return clusters_labels
 
-def draw_cluster(cluster,umap,name,show_2d_plot,path):
-    labels = cluster.labels_
+def draw_cluster(cluster_labels,umap,name,show_2d_plot,path):
+    labels = cluster_labels
     data=umap
     data = data.assign(C=labels)
     data=data[data["C"]>-1]
     fig = plt.figure(figsize=(15, 10))
-    plt.scatter(data[0], data[1], c=data["C"], cmap='Paired')
+    plt.scatter(data[0], data[1], c=data["C"])
     if not os.path.exists(path+"/results/partioned_clusters"): os.mkdir(path+"/results/partioned_clusters")
     plt.savefig(path+"/results/partioned_clusters/"+name+'.png')
     if not show_2d_plot:
         plt.close(fig)
     plt.show()
 
-def clustered_df(slices,clusters):
+def clustered_df(slices,clusters_labels):
     clustered_df=[]
     for i in range(len(slices)):
         slice=slices[i]
-        labels=clusters[i].labels_
+        labels=clusters_labels[i]
         slice = slice.assign(C= labels)
         slice=slice[slice["C"]>-1]
         slice=slice.reset_index(drop=True)
@@ -108,7 +109,7 @@ def alignment_procedure(dt,concat_cent,umap_n_neighbor=2,umap_n_components=5,min
 
 
 
-def plot_alignment(df_tm,umap_embeddings_visualization,clusters,path):
+def plot_alignment(df_tm,umap_embeddings_visualization,clusters_labels,path):
     tm = df_tm[["window_num", "cluster_num", "C"]]
     tm["name"] = tm.apply(lambda row: str(row["window_num"]) + "-" + str(row["cluster_num"]), axis=1)
     tm = tm[tm["C"] != -1]
@@ -130,7 +131,7 @@ def plot_alignment(df_tm,umap_embeddings_visualization,clusters,path):
             win=int(j.split("-")[0])
 
 
-            labels = clusters[win-1].labels_
+            labels = clusters_labels[win-1]
             data=umap_embeddings_visualization[win-1]
             data = data.assign(C=labels)
             data=data[data["C"]==cl]
