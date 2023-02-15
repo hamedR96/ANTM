@@ -1,11 +1,6 @@
 import pandas as pd
-from antm.text_processing import token_frequency_filter, doucments_lemmatizer, document_tokenize, \
-    preprocessing_documents
-from gensim.corpora import Dictionary
 from antm.ctfidf import CTFIDFVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
-
-
 
 def rep_prep(cluster_df):
     clusters_df = pd.concat(cluster_df)
@@ -14,20 +9,6 @@ def rep_prep(cluster_df):
     documents_per_topic_per_time=documents_per_topic_per_time.reset_index().rename(columns={"index":"cluster"})
 
     return documents_per_topic_per_time
-
-
-
-
-def text_processing(all_documents):
-    preprocessed_documents=preprocessing_documents(all_documents)
-    documents_tokens=document_tokenize(preprocessed_documents)
-    tokens=doucments_lemmatizer(documents_tokens)
-    tokens=token_frequency_filter(tokens,5)
-    dictionary = Dictionary(tokens)
-    corpus = [dictionary.doc2bow(text) for text in tokens]
-
-    return tokens,dictionary,corpus
-
 
 
 def ctf_idf_topics(docs_per_class,words,ctfidf,num_terms):

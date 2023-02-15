@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='antm',
-    version='0.0.14',
+    version='0.1.0',
     author='Hamed Rahimi',
     author_email='<hamed.rahimi@sorbonne-universite.fr',
     description='Aligned Neural Topic Model for Exploring Evolving Topics',
@@ -11,7 +11,7 @@ setup(
     url='https://github.com/hamedR96/ANTM',
     packages=find_packages(),
     install_requires=["hdbscan","swifter","sentence-transformers","umap-learn","transformers","torch",
-                      "gensim","plotly","matplotlib","pyarrow","pandas","kaleido"
+                      "gensim","plotly","matplotlib","pyarrow","kaleido"
                       ],
     
     project_urls={

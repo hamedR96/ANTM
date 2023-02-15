@@ -1,5 +1,6 @@
 from collections import defaultdict
 from nltk import word_tokenize, WordNetLemmatizer
+from gensim.corpora import Dictionary
 from nltk.corpus import stopwords
 import re
 
@@ -31,3 +32,12 @@ def token_frequency_filter(documents_tokens,threshold):
     return tokens
 
 
+def text_processing(all_documents):
+    preprocessed_documents=preprocessing_documents(all_documents)
+    documents_tokens=document_tokenize(preprocessed_documents)
+    tokens=doucments_lemmatizer(documents_tokens)
+    tokens=token_frequency_filter(tokens,5)
+    dictionary = Dictionary(tokens)
+    corpus = [dictionary.doc2bow(text) for text in tokens]
+
+    return tokens,dictionary,corpus

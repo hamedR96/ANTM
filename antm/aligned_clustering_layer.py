@@ -76,8 +76,8 @@ def clustered_cent_df(clustered_df):
     for i in clustered_df:
         de=i[["C","embedding"]]
         de = de.groupby("C")["embedding"].apply(list).reset_index()
-        de["embedding"]=de.apply(lambda row: np.mean(row["embedding"],axis=0), axis=1)
-        de=pd.DataFrame(list(de['embedding']))
+        de["embedding_mean"] = de["embedding"].apply(lambda x: np.mean(x, axis=0))
+        de=pd.DataFrame(list(de['embedding_mean']))
         clustered_df_cent.append(de)
         clustered_np_cent.append(de.to_numpy())
     return clustered_df_cent,clustered_np_cent
@@ -138,12 +138,12 @@ def plot_alignment(df_tm,umap_embeddings_visualization,clusters_labels,path):
             data["win"]=win
             cc_list.append(data)
         cc_df=pd.concat(cc_list)
-        cc_df["super_topic"]=i
+        cc_df["evolving_topic"]=i
         ccs_list.append(cc_df)
     ccs_df=pd.concat(ccs_list)
 
     fig = px.scatter_3d(x=ccs_df[0], y=ccs_df[1], z=ccs_df["win"],
-                        color=ccs_df["super_topic"],color_continuous_scale=px.colors.sequential.Viridis)
+                        color=ccs_df["evolving_topic"],color_continuous_scale=px.colors.sequential.Viridis)
     fig.update_layout(width=1000, height=1000)
 
     fig.show()

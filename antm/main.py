@@ -5,16 +5,18 @@ import random
 
 import pandas as pd
 from matplotlib import pyplot as plt
-
+from antm.text_processing import text_processing
 from antm.aligned_clustering_layer import aligned_umap, hdbscan_cluster, draw_cluster, clustered_df, plot_alignment, \
     alignment_procedure, dt_creator, clustered_cent_df
 from antm.sws import sws
 from antm.contextual_embedding_layer import contextual_embedding
-from antm.topic_representation_layer import rep_prep, text_processing,ctfidf_rp, topic_evolution
+from antm.topic_representation_layer import rep_prep,ctfidf_rp, topic_evolution
+from antm.cm import coherence_model
+from antm.diversity_metrics import proportion_unique_words,pairwise_jaccard_diversity
 
 class ANTM:
     def __init__(self, df, overlap, window_length, mode="data2vec", umap_dimension_size=5, umap_n_neighbors=15,
-                 partioned_clusttering_size=5, num_words=10, show_2d_plot=False,path=os.getcwd()):
+                 partioned_clusttering_size=10, num_words=10, show_2d_plot=False,path=os.getcwd()):
         self.df = df
         self.overlap = overlap
         self.window_length = window_length
@@ -49,14 +51,23 @@ class ANTM:
         self.corpus=None
         self.output=None
         self.evolving_topics=None
+        self.topics=None
+        self.slice_num=None
 
+        self.periodwise_puw_diversity=None
+        self.periodwise_pairwise_jaccard_diversity=None
+        self.periodwise_topic_coherence=None
 
     def fit(self,save=True):
+        print("contextual document embedding is initiated...")
         self.df_embedded = contextual_embedding(self.df, mode=self.mode)
+        print("Sliding Window Segmentation is initialized...")
         self.slices, self.arg1_umap, self.arg2_umap = sws(self.df_embedded, self.overlap, self.window_length)
+        print("Aligned Dimension Reduction is initialized...")
         self.umap_embeddings_clustering, self.umap_embeddings_visulization = aligned_umap(
             self.arg1_umap, self.arg2_umap, n_neighbors=self.umap_n_neighbors,
             umap_dimension_size=self.umap_dimension_size)
+        print("Sequential Document-cluster association is initialized...")
         self.clusters = hdbscan_cluster(self.umap_embeddings_clustering, self.partioned_clusttering_size)
         if not os.path.exists(self.path+"/results"): os.mkdir(self.path+"/results")
         for i in range(len(self.clusters)):
@@ -65,17 +76,22 @@ class ANTM:
         self.cluster_df = clustered_df(self.slices, self.clusters)
         self.clustered_df_cent, self.clustered_np_cent = clustered_cent_df(self.cluster_df)
         self.dt, self.concat_cent = dt_creator(self.clustered_df_cent)
+        print("Cluster Alignment Procedure is initialized...")
         self.df_tm = alignment_procedure(self.dt, self.concat_cent)
         self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters,self.path)
         self.documents_per_topic_per_time = rep_prep(self.cluster_df)
         self.tokens, self.dictionary, self.corpus = text_processing(self.df.content.values)
+        print("Topic Representation is initialized...")
         self.output = ctfidf_rp(self.dictionary, self.documents_per_topic_per_time, num_doc=len(self.df), num_words=self.num_words)
+        print("Topic Modeling is done")
         self.evolving_topics=topic_evolution(self.list_tm, self.output)
         if save: self.save()
-
+        self.slice_num = len(set(self.output["slice_num"]))
+        self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in range(1, self.slice_num + 1)]
+        return self.topics
 
     def save(self):
-
+        print("Model is saving...")
         if not os.path.exists(self.path+"/model"): os.mkdir(self.path+"/model")
 
         self.df_embedded.to_pickle(self.path+"/model/embedding_df")
@@ -100,7 +116,7 @@ class ANTM:
 
 
     def load(self):
-
+        print("Model is Loading...")
         self.df_embedded=pd.read_pickle(self.path+"/model/embedding_df")
 
         with open(self.path + "/model/slices", "rb") as fp:  # Pickling
@@ -136,6 +152,10 @@ class ANTM:
         self.output=pd.read_pickle(self.path+"/model/output")
 
         self.evolving_topics = pd.read_pickle(self.path + "/model/evolving_topics")
+        self.slice_num = len(set(self.output["slice_num"]))
+        self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in
+                    range(1, self.slice_num + 1)]
+        return self.topics
 
     def random_evolution_topic(self):
         random_element = random.choice(self.list_tm)
@@ -153,7 +173,7 @@ class ANTM:
         for i in range(len(random_element)):
             cl = int(random_element[i].split("-")[1])
             win = int(random_element[i].split("-")[0])
-            labels = self.clusters[win - 1].labels_
+            labels = self.clusters[win - 1]
             data = self.umap_embeddings_visulization[win - 1]
             data = data.assign(C=labels)
             data = data[data["C"] == cl]
@@ -179,7 +199,7 @@ class ANTM:
             for i in range(len(random_element)):
                 cl = int(random_element[i].split("-")[1])
                 win = int(random_element[i].split("-")[0])
-                labels = self.clusters[win - 1].labels_
+                labels = self.clusters[win - 1]
                 data = self.umap_embeddings_visulization[win - 1]
                 data = data.assign(C=labels)
                 data = data[data["C"] == cl]
@@ -243,4 +263,14 @@ class ANTM:
         plt.savefig(self.path+"/results/evolving_topics.png")
         plt.show()
 
+    def get_periodwise_puw_diversity(self):
+        self.periodwise_puw_diversity=[proportion_unique_words(period, topk=self.num_words) for period in self.topics]
+        return  self.periodwise_puw_diversity
 
+    def get_periodwise_pairwise_jaccard_diversity(self):
+        self.periodwise_pairwise_jaccard_diversity=[pairwise_jaccard_diversity(period, topk=self.num_words) for period in self.topics]
+        return  self.periodwise_pairwise_jaccard_diversity
+
+    def get_periodwise_topic_coherence(self,model="c_npmi"):
+        self.periodwise_topic_coherence=[coherence_model(period,self.tokens,self.dictionary,self.num_words,c_m=model) for period in self.topics]
+        return self.periodwise_topic_coherence

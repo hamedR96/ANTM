@@ -27,18 +27,20 @@ from antm import ANTM
 import pandas as pd
 
 # load data
-df = pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_1K.parquet")
-df = df[["abstract", "year"]].rename(columns={"abstract": "content", "year": "time"}).dropna().reset_index()
+df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_2K.parquet")
+df=df[["abstract","year"]].rename(columns={"abstract":"content","year":"time"})
+df=df.dropna().sort_values("time").reset_index(drop=True).reset_index()
 
 # choosing the windows size and overlapping length for time frames
 window_size = 3
 overlap = 1
 
-# initialize model
-model = ANTM(df, overlap, window_size, mode="data2vec", num_words=10, path="./saved_data")
+#initialize model
+model=ANTM(df,overlap,window_size,umap_n_neighbors=5, partioned_clusttering_size=2,mode="data2vec",num_words=10,path="./saved_data")
 
-# learn the model and save it
-model.fit(save=True)
+#learn the model and save it
+topics_per_period=model.fit(save=True)
+#output is a list of timeframes including all the topics associated with that period
 ```
 ### To Load a Model
 
@@ -47,15 +49,16 @@ from antm import ANTM
 import pandas as pd
 
 # load data
-df = pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_1K.parquet")
-df = df[["abstract", "year"]].rename(columns={"abstract": "content", "year": "time"}).dropna().reset_index()
+df=pd.read_parquet("./data/dblpFullSchema_2000_2020_extract_big_data_2K.parquet")
+df=df[["abstract","year"]].rename(columns={"abstract":"content","year":"time"})
+df=df.dropna().sort_values("time").reset_index(drop=True).reset_index()
 
+# choosing the windows size and overlapping length for time frames
 window_size = 3
 overlap = 1
-
-# initialize the model for loading
-model = ANTM(df, overlap, window_size, mode="data2vec", num_words=10, path="./saved_data")
-model.load()
+#initialize model
+model=ANTM(df,overlap,window_size,mode="data2vec",num_words=10,path="./saved_data")
+topics_per_period=model.load()
 ```
 ### Plug-and-Play Functions
 ```python
@@ -70,6 +73,18 @@ model.plot_clusters_over_time()
 
 #plots all the evolving topics
 model.plot_evolving_topics()
+```
+### Topic Quality Metrics 
+```python
+#returns pairwise jaccard diversity for each period
+model.get_periodwise_pairwise_jaccard_diversity()
+
+#returns proportion unique words diversity for each period
+model.get_periodwise_puw_diversity()
+
+#returns topic coherence for each period
+model.get_periodwise_topic_coherence(model="c_v") 
+
 ```
 ## Datasets
 [Arxiv articles](https://www.kaggle.com/datasets/Cornell-University/arxiv)

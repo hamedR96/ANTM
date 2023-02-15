@@ -24,14 +24,13 @@ def slice_df(df, t1, t2, w, o):
     slice_start = t1
     slice_end = t1 + w
     slice_num=0
-    while slice_end < t2:
+    while slice_end <= t2+1:
         slice_num+=1
-        #print(slice_start,slice_end)
         slice = df[(df['time'] >= slice_start) & (df['time'] < slice_end)]
         slice["slice_num"]=slice_num
         slices.append(slice)
         slice_start += w - o
-        slice_end += w - o
+        slice_end += w -o
     return slices
 
 def relation_periodes(list_ids1, list_ids2) :
