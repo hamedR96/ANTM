@@ -4,7 +4,11 @@ from sklearn.feature_extraction.text import CountVectorizer
 
 def rep_prep(cluster_df):
     clusters_df = pd.concat(cluster_df)
-    clusters_df["num_doc"]=1
+
+    clusters_df_copy=clusters_df.copy()
+    clusters_df_copy.loc[:,"num_doc"]=1
+    clusters_df=clusters_df_copy
+
     documents_per_topic_per_time= clusters_df.groupby(["slice_num","C"], as_index=False).agg({'content': ' '.join,"num_doc":"count"})
     documents_per_topic_per_time=documents_per_topic_per_time.reset_index().rename(columns={"index":"cluster"})
 
@@ -35,8 +39,8 @@ def topic_evolution(list_tm,output):
     for et in list_tm:
         evolving_topic = []
         for topic in et:
-            cl = int(topic.split("-")[1])
-            win = int(topic.split("-")[0])
+            cl = int(float(topic.split("-")[1]))
+            win = int(float(topic.split("-")[0]))
             t = output[output["slice_num"] == win]
             t = t[t["C"] == cl]
             evolving_topic.append(t.topic_representation.to_list()[0])

@@ -32,11 +32,11 @@ df=df[["abstract","year"]].rename(columns={"abstract":"content","year":"time"})
 df=df.dropna().sort_values("time").reset_index(drop=True).reset_index()
 
 # choosing the windows size and overlapping length for time frames
-window_size = 3
-overlap = 1
+window_size = 6
+overlap = 2
 
 #initialize model
-model=ANTM(df,overlap,window_size,umap_n_neighbors=5, partioned_clusttering_size=2,mode="data2vec",num_words=10,path="./saved_data")
+model=ANTM(df,overlap,window_size,umap_n_neighbors=10, partioned_clusttering_size=5,mode="data2vec",num_words=10,path="./saved_data")
 
 #learn the model and save it
 topics_per_period=model.fit(save=True)
@@ -54,8 +54,8 @@ df=df[["abstract","year"]].rename(columns={"abstract":"content","year":"time"})
 df=df.dropna().sort_values("time").reset_index(drop=True).reset_index()
 
 # choosing the windows size and overlapping length for time frames
-window_size = 3
-overlap = 1
+window_size = 6
+overlap = 2
 #initialize model
 model=ANTM(df,overlap,window_size,mode="data2vec",num_words=10,path="./saved_data")
 topics_per_period=model.load()

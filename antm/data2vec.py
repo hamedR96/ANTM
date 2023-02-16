@@ -1,10 +1,9 @@
 import torch
-from transformers import Data2VecTextConfig, Data2VecTextModel,RobertaTokenizer
+from transformers import  Data2VecTextModel, RobertaTokenizer
 from transformers import pipeline
 
-configuration = Data2VecTextConfig()
-model = Data2VecTextModel(configuration).from_pretrained("facebook/data2vec-text-base")
-tokenizer = RobertaTokenizer.from_pretrained("facebook/data2vec-text-base",model_max_length=1024)
+tokenizer = RobertaTokenizer.from_pretrained("facebook/data2vec-text-base")
+model = Data2VecTextModel.from_pretrained("facebook/data2vec-text-base")
 
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 

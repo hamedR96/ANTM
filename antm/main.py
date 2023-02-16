@@ -162,8 +162,8 @@ class ANTM:
         list_words = []
         for i in range(len(random_element)):
             # print(random_element[i][0])
-            cl = int(random_element[i].split("-")[1])
-            win = int(random_element[i].split("-")[0])
+            cl = int(float(random_element[i].split("-")[1]))
+            win = int(float(random_element[i].split("-")[0]))
             t = self.output[self.output["slice_num"] == win]
             t = t[t["C"] == cl]
             list_words.append(list(t.topic_representation)[0])
@@ -171,13 +171,13 @@ class ANTM:
 
         plt.figure(figsize=(15, 10))
         for i in range(len(random_element)):
-            cl = int(random_element[i].split("-")[1])
-            win = int(random_element[i].split("-")[0])
+            cl = int(float(random_element[i].split("-")[1]))
+            win = int(float(random_element[i].split("-")[0]))
             labels = self.clusters[win - 1]
             data = self.umap_embeddings_visulization[win - 1]
             data = data.assign(C=labels)
             data = data[data["C"] == cl]
-            plt.scatter(data[0], data[1], label=list_words[i])
+            plt.scatter(data[0], data[1], label=[win,list_words[i]])
             plt.legend()
 
         plt.savefig(self.path+'/results/random_topic_evolution.png')
@@ -189,21 +189,21 @@ class ANTM:
             random_element = self.list_tm[j]
             for i in range(len(random_element)):
                 # print(random_element[i])
-                cl = int(random_element[i].split("-")[1])
-                win = int(random_element[i].split("-")[0])
+                cl = int(float(random_element[i].split("-")[1]))
+                win = int(float(random_element[i].split("-")[0]))
                 t = self.output[self.output["slice_num"] == win]
                 t = t[t["C"] == cl]
                 list_words.append(list(t.topic_representation)[0])
                 # print(list(t.topic_representation))
             fig = plt.figure(figsize=(15, 10))
             for i in range(len(random_element)):
-                cl = int(random_element[i].split("-")[1])
-                win = int(random_element[i].split("-")[0])
+                cl = int(float(random_element[i].split("-")[1]))
+                win = int(float(random_element[i].split("-")[0]))
                 labels = self.clusters[win - 1]
                 data = self.umap_embeddings_visulization[win - 1]
                 data = data.assign(C=labels)
                 data = data[data["C"] == cl]
-                plt.scatter(data[0], data[1], label=list_words[i])
+                plt.scatter(data[0], data[1], label=[win,list_words[i]])
                 plt.legend()
             if not os.path.exists(self.path+"/results/evolving_topics"): os.mkdir(self.path+"/results/evolving_topics")
             plt.savefig(self.path+'/results/evolving_topics/topic_evolution_' + str(j) + '.png')

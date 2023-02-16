@@ -27,7 +27,9 @@ def slice_df(df, t1, t2, w, o):
     while slice_end <= t2+1:
         slice_num+=1
         slice = df[(df['time'] >= slice_start) & (df['time'] < slice_end)]
-        slice["slice_num"]=slice_num
+        slice_copy = slice.copy()
+        slice_copy.loc[:, "slice_num"] = slice_num
+        slice = slice_copy
         slices.append(slice)
         slice_start += w - o
         slice_end += w -o

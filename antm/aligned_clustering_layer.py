@@ -61,12 +61,12 @@ def draw_cluster(cluster_labels,umap,name,show_2d_plot,path):
 def clustered_df(slices,clusters_labels):
     clustered_df=[]
     for i in range(len(slices)):
-        slice=slices[i]
+        s=slices[i]
         labels=clusters_labels[i]
-        slice = slice.assign(C= labels)
-        slice=slice[slice["C"]>-1]
-        slice=slice.reset_index(drop=True)
-        clustered_df.append(slice)
+        s = s.assign(C= labels)
+        s=s[s["C"]>-1]
+        s=s.reset_index(drop=True)
+        clustered_df.append(s)
     return clustered_df
 
 
@@ -87,7 +87,8 @@ def dt_creator(clustered_df_cent):
     topics_cent=[]
     for i in range(len(clustered_df_cent)):
         t=clustered_df_cent[i].copy().reset_index().rename(columns={"index":"cluster_num"})
-        t["window_num"]=i+1
+        for j in range(len(t)):
+            t.loc[j, "window_num"] = i+1
         topics_cent.append(t)
     dt=pd.concat(topics_cent).reset_index(drop=True)
     concat_cent=pd.concat(clustered_df_cent).reset_index(drop=True)
@@ -111,34 +112,30 @@ def alignment_procedure(dt,concat_cent,umap_n_neighbor=2,umap_n_components=5,min
 
 def plot_alignment(df_tm,umap_embeddings_visualization,clusters_labels,path):
     tm = df_tm[["window_num", "cluster_num", "C"]]
-    tm["name"] = tm.apply(lambda row: str(row["window_num"]) + "-" + str(row["cluster_num"]), axis=1)
+    tm_copy = tm.copy()
+    tm_copy.loc[:, "name"] = tm.apply(lambda row: str(row["window_num"]) + "-" + str(row["cluster_num"]) , axis=1)
+    tm = tm_copy
     tm = tm[tm["C"] != -1]
     tm = tm.groupby("C")["name"].apply(list).reset_index()
     list_tm = list(tm["name"])
-    #with open("./results/all_topic_evolution.txt", "w") as output:
-        #for et in list_tm:
-            #output.write("\n")
-            #for topic in et:
-                #output.write(str(topic) + "\s")
-
     ccs_list=[]
     for i in range(len(list_tm)):
-        #print(i)
         cc_list=[]
         for j in list_tm[i]:
-
-            cl=int(j.split("-")[1])
-            win=int(j.split("-")[0])
-
-
+            cl=int(float(j.split("-")[1]))
+            win=int(float(j.split("-")[0]))
             labels = clusters_labels[win-1]
             data=umap_embeddings_visualization[win-1]
             data = data.assign(C=labels)
             data=data[data["C"]==cl]
-            data["win"]=win
+            data_copy = data.copy()
+            data_copy.loc[:, "win"] = win
+            data = data_copy
             cc_list.append(data)
         cc_df=pd.concat(cc_list)
-        cc_df["evolving_topic"]=i
+        cc_df_copy=cc_df.copy()
+        cc_df_copy.loc[:, "evolving_topic"] = i
+        cc_df=cc_df_copy
         ccs_list.append(cc_df)
     ccs_df=pd.concat(ccs_list)
 
