@@ -2,12 +2,14 @@ import glob
 import os
 import pickle
 import random
+import time
 
 import pandas as pd
+import numpy as np
 from matplotlib import pyplot as plt
 from antm.text_processing import text_processing
 from antm.aligned_clustering_layer import aligned_umap, hdbscan_cluster, draw_cluster, clustered_df, plot_alignment, \
-    alignment_procedure, dt_creator, clustered_cent_df
+    plot_alignment_no_show, alignment_procedure, dt_creator, clustered_cent_df
 from antm.sws import sws
 from antm.contextual_embedding_layer import contextual_embedding
 from antm.topic_representation_layer import rep_prep,ctfidf_rp, topic_evolution
@@ -35,6 +37,7 @@ class ANTM:
         self.umap_embeddings_clustering = None
         self.umap_embeddings_visulization = None
         self.clusters=None
+        self.cluster_proba=None ## Added this for get_cluster_info
         self.slices=None
         self.arg1_umap=None
         self.arg2_umap=None
@@ -59,16 +62,16 @@ class ANTM:
         self.periodwise_topic_coherence=None
 
     def fit(self,save=True):
-        print("contextual document embedding is initiated...")
+        #print("contextual document embedding is initiated...")
         self.df_embedded = contextual_embedding(self.df, mode=self.mode)
-        print("Sliding Window Segmentation is initialized...")
+        #print("Sliding Window Segmentation is initialized...")
         self.slices, self.arg1_umap, self.arg2_umap = sws(self.df_embedded, self.overlap, self.window_length)
-        print("Aligned Dimension Reduction is initialized...")
+        #print("Aligned Dimension Reduction is initialized...")
         self.umap_embeddings_clustering, self.umap_embeddings_visulization = aligned_umap(
             self.arg1_umap, self.arg2_umap, n_neighbors=self.umap_n_neighbors,
             umap_dimension_size=self.umap_dimension_size)
-        print("Sequential Document-cluster association is initialized...")
-        self.clusters = hdbscan_cluster(self.umap_embeddings_clustering, self.partioned_clusttering_size)
+        #print("Sequential Document-cluster association is initialized...")
+        self.clusters,self.cluster_proba = hdbscan_cluster(self.umap_embeddings_clustering, self.partioned_clusttering_size)
         if not os.path.exists(self.path+"/results"): os.mkdir(self.path+"/results")
         for i in range(len(self.clusters)):
             draw_cluster(self.clusters[i], self.umap_embeddings_visulization[i], "time_frame_" + str(i),
@@ -76,20 +79,59 @@ class ANTM:
         self.cluster_df = clustered_df(self.slices, self.clusters)
         self.clustered_df_cent, self.clustered_np_cent = clustered_cent_df(self.cluster_df)
         self.dt, self.concat_cent = dt_creator(self.clustered_df_cent)
-        print("Cluster Alignment Procedure is initialized...")
+        #print("Cluster Alignment Procedure is initialized...")
         self.df_tm = alignment_procedure(self.dt, self.concat_cent)
         self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters,self.path)
         self.documents_per_topic_per_time = rep_prep(self.cluster_df)
         self.tokens, self.dictionary, self.corpus = text_processing(self.df.content.values)
-        print("Topic Representation is initialized...")
+        #print("Topic Representation is initialized...")
         self.output = ctfidf_rp(self.dictionary, self.documents_per_topic_per_time, num_doc=len(self.df), num_words=self.num_words)
-        print("Topic Modeling is done")
+        #print("Topic Modeling is done")
         self.evolving_topics=topic_evolution(self.list_tm, self.output)
         if save: self.save()
-        self.slice_num = len(set(self.output["slice_num"]))
-        self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in range(1, self.slice_num + 1)]
+        self.slice_num = set(self.output["slice_num"])
+        self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in  self.slice_num]
+        self.topics = list(filter(None, self.topics))
         return self.topics
-
+    
+    def fit_without_embedding(self,df_embedded,umap_embeddings_clustering=None,umap_embeddings_visulization=None,save=True):
+        self.df_embedded = df_embedded
+        #print("Sliding Window Segmentation is initialized...")
+        self.slices, self.arg1_umap, self.arg2_umap = sws(self.df_embedded, self.overlap, self.window_length)
+        #print("Aligned Dimension Reduction is initialized...")
+        start = time.time()
+        if umap_embeddings_clustering is not None and umap_embeddings_visulization is not None :
+                self.umap_embeddings_clustering, self.umap_embeddings_visulization = umap_embeddings_clustering,umap_embeddings_visulization
+        else :
+            self.umap_embeddings_clustering, self.umap_embeddings_visulization = aligned_umap(
+                self.arg1_umap, self.arg2_umap, n_neighbors=self.umap_n_neighbors,
+                umap_dimension_size=self.umap_dimension_size)
+        #print(time.time()-start)
+        #print("Sequential Document-cluster association is initialized...")
+        self.clusters,self.cluster_proba = hdbscan_cluster(self.umap_embeddings_clustering, self.partioned_clusttering_size)
+        if not os.path.exists(self.path+"/results"): os.mkdir(self.path+"/results")
+        for i in range(len(self.clusters)):
+            draw_cluster(self.clusters[i], self.umap_embeddings_visulization[i], "time_frame_" + str(i),
+                         show_2d_plot=self.show_2d_plot,path=self.path)
+        self.cluster_df = clustered_df(self.slices, self.clusters)
+        self.clustered_df_cent, self.clustered_np_cent = clustered_cent_df(self.cluster_df)
+        self.dt, self.concat_cent = dt_creator(self.clustered_df_cent)
+        #print("Cluster Alignment Procedure is initialized...")
+        self.df_tm = alignment_procedure(self.dt, self.concat_cent)
+        self.list_tm = plot_alignment_no_show(self.df_tm, self.umap_embeddings_visulization, self.clusters,self.path)
+        self.documents_per_topic_per_time = rep_prep(self.cluster_df)
+        self.tokens, self.dictionary, self.corpus = text_processing(self.df.content.values)
+        #print("Topic Representation is initialized...")
+        self.output = ctfidf_rp(self.dictionary, self.documents_per_topic_per_time, num_doc=len(self.df), num_words=self.num_words)
+        #print("Topic Modeling is done")
+        self.evolving_topics=topic_evolution(self.list_tm, self.output)
+        if save: self.save()
+        self.slice_num = set(self.output["slice_num"])
+        self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in  self.slice_num]
+        self.topics = list(filter(None, self.topics))
+        return self.topics
+    
+    
     def save(self):
         print("Model is saving...")
         if not os.path.exists(self.path+"/model"): os.mkdir(self.path+"/model")
@@ -152,9 +194,9 @@ class ANTM:
         self.output=pd.read_pickle(self.path+"/model/output")
 
         self.evolving_topics = pd.read_pickle(self.path + "/model/evolving_topics")
-        self.slice_num = len(set(self.output["slice_num"]))
+        self.slice_num = set(self.output["slice_num"])
         self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in
-                    range(1, self.slice_num + 1)]
+                    self.slice_num]
         return self.topics
 
     def random_evolution_topic(self):
@@ -263,13 +305,67 @@ class ANTM:
         plt.savefig(self.path+"/results/evolving_topics.png")
         plt.show()
 
+    
+    
+    def get_cluster_info(self) :
+        # num_clusters : number of clusters found in each period
+        # number_of_outliers :  number of outlier documents in each period (probability == 0, or label == -1)
+        # number_of_ones : number of documents that were assigned to their clusters with a maximum membreship score (= 1)
+        # average_probabilities : average membership score per each cluster, in each period
+        # period_cluster_sizes : number of documents in each cluster, in each period
+        
+        num_clusters = []
+        cluster_sizes = []
+        number_of_outliers = []
+        number_of_ones = []
+        average_probabilities = []
+        period_cluster_sizes = []
+        for c,p in zip(self.clusters,self.cluster_proba) :
+            num_clusters.append(c.max()+1)
+            
+            number_of_outliers.append(np.count_nonzero(c == -1)) ## or np.count_nonzero(p == 0)
+            number_of_ones.append(np.count_nonzero(p == 1))
+            
+            avg_probs = []
+            cluster_id = np.unique(c)
+            cluster_id = cluster_id[cluster_id != -1]
+            for label in cluster_id:
+                label_probs = p[c == label]
+                cluster_size = len(label_probs)
+                cluster_sizes.append(cluster_size)
+                avg_prob = np.mean(label_probs)
+                avg_probs.append(avg_prob)
+            period_cluster_sizes.append(cluster_sizes)
+            average_probabilities.append(avg_probs)  
+            
+        return num_clusters,number_of_outliers,number_of_ones,average_probabilities,period_cluster_sizes
+    
+      
+    def pretty_print_cluster_info(self) :
+        ### A function that presents the info returned by get_cluster_info in a readable form
+        num_clusters,number_of_outliers,number_of_ones,average_probabilities,period_cluster_sizes = self.get_cluster_info()
+        for i in range(len(num_clusters)) :
+            print("Period ", i, " :")
+            print("\t Number of clusters : ", num_clusters[i])
+            print("\t Number of outlier documents : ", number_of_outliers[i])
+            print("\t Number of documents with belonging probability = 1 : ", number_of_ones[i])
+            print("\t Clusters : ")
+            for j in range(num_clusters[i]) :
+                print("\t\t Cluster ", j, " /// Number of docs : ",period_cluster_sizes[i][j]   , " /// Average membership score : ",average_probabilities[i][j])
+            print("\n")
+            
+         
+            
+    
     def get_periodwise_puw_diversity(self):
-        self.periodwise_puw_diversity=[proportion_unique_words(period, topk=self.num_words) for period in self.topics]
+        self.periodwise_puw_diversity =[proportion_unique_words(period, topk=self.num_words) for period in self.topics]
         return  self.periodwise_puw_diversity
 
     def get_periodwise_pairwise_jaccard_diversity(self):
         self.periodwise_pairwise_jaccard_diversity=[pairwise_jaccard_diversity(period, topk=self.num_words) for period in self.topics]
         return  self.periodwise_pairwise_jaccard_diversity
+    
+    
 
     def get_periodwise_topic_coherence(self,model="c_npmi"):
         self.periodwise_topic_coherence=[coherence_model(period,self.tokens,self.dictionary,self.num_words,c_m=model) for period in self.topics]
