@@ -41,6 +41,5 @@ def pairwise_jaccard_diversity(topics, topk=10):
         js = 1 - len(set(list1).intersection(set(list2)))/len(set(list1).union(set(list2)))
         dist = dist + js
         count = count + 1
-    #print("ok")
     return dist/count
 
