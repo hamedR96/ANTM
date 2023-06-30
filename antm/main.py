@@ -61,16 +61,32 @@ class ANTM:
         self.periodwise_pairwise_jaccard_diversity=None
         self.periodwise_topic_coherence=None
 
-    def fit(self,save=True):
-        #print("contextual document embedding is initiated...")
-        self.df_embedded = contextual_embedding(self.df, mode=self.mode)
-        #print("Sliding Window Segmentation is initialized...")
+    def fit(self,df_embedded=None,umap_embeddings_clustering=None,umap_embeddings_vis=None,save=True):
+
+        # Contextual embedding
+        if df_embedded is None :
+            print("contextual document embedding is initiated...")
+            self.df_embedded = contextual_embedding(self.df, mode=self.mode)
+        else :
+            self.df_embbeded = df_embedded
+            print("contextual document embedding provided... skip")
+
+        # Sliding window segmentation
+        print("Sliding Window Segmentation is initialized...")
         self.slices, self.arg1_umap, self.arg2_umap = sws(self.df_embedded, self.overlap, self.window_length)
-        #print("Aligned Dimension Reduction is initialized...")
-        self.umap_embeddings_clustering, self.umap_embeddings_visulization = aligned_umap(
-            self.arg1_umap, self.arg2_umap, n_neighbors=self.umap_n_neighbors,
-            umap_dimension_size=self.umap_dimension_size)
-        #print("Sequential Document-cluster association is initialized...")
+
+        # Aligned dimensionality reduction
+        if umap_embeddings_clustering is None or umap_embeddings_vis is None :
+            print("Aligned Dimension Reduction is initialized...")
+            self.umap_embeddings_clustering, self.umap_embeddings_visulization = aligned_umap(
+                self.arg1_umap, self.arg2_umap, n_neighbors=self.umap_n_neighbors,
+                umap_dimension_size=self.umap_dimension_size)
+        else :
+            self.umap_embeddings_clustering = umap_embeddings_clustering
+            self.umap_embeddings_visulization = umap_embeddings_vis
+            print("umap embeddings provided... skip")
+
+        print("Sequential Document-cluster association is initialized...")
         self.clusters,self.cluster_proba = hdbscan_cluster(self.umap_embeddings_clustering, self.partioned_clusttering_size)
         if not os.path.exists(self.path+"/results"): os.mkdir(self.path+"/results")
         for i in range(len(self.clusters)):
@@ -79,51 +95,14 @@ class ANTM:
         self.cluster_df = clustered_df(self.slices, self.clusters)
         self.clustered_df_cent, self.clustered_np_cent = clustered_cent_df(self.cluster_df)
         self.dt, self.concat_cent = dt_creator(self.clustered_df_cent)
-        #print("Cluster Alignment Procedure is initialized...")
+        print("Cluster Alignment Procedure is initialized...")
         self.df_tm = alignment_procedure(self.dt, self.concat_cent)
         self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters,self.path)
         self.documents_per_topic_per_time = rep_prep(self.cluster_df)
         self.tokens, self.dictionary, self.corpus = text_processing(self.df.content.values)
-        #print("Topic Representation is initialized...")
+        print("Topic Representation is initialized...")
         self.output = ctfidf_rp(self.dictionary, self.documents_per_topic_per_time, num_doc=len(self.df), num_words=self.num_words)
-        #print("Topic Modeling is done")
-        self.evolving_topics=topic_evolution(self.list_tm, self.output)
-        if save: self.save()
-        self.slice_num = set(self.output["slice_num"])
-        self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in  self.slice_num]
-        self.topics = list(filter(None, self.topics))
-        return self.topics
-    
-    def fit_without_embedding(self,df_embedded,umap_embeddings_clustering=None,umap_embeddings_visulization=None,save=True):
-        self.df_embedded = df_embedded
-        #print("Sliding Window Segmentation is initialized...")
-        self.slices, self.arg1_umap, self.arg2_umap = sws(self.df_embedded, self.overlap, self.window_length)
-        #print("Aligned Dimension Reduction is initialized...")
-        start = time.time()
-        if umap_embeddings_clustering is not None and umap_embeddings_visulization is not None :
-                self.umap_embeddings_clustering, self.umap_embeddings_visulization = umap_embeddings_clustering,umap_embeddings_visulization
-        else :
-            self.umap_embeddings_clustering, self.umap_embeddings_visulization = aligned_umap(
-                self.arg1_umap, self.arg2_umap, n_neighbors=self.umap_n_neighbors,
-                umap_dimension_size=self.umap_dimension_size)
-        #print(time.time()-start)
-        #print("Sequential Document-cluster association is initialized...")
-        self.clusters,self.cluster_proba = hdbscan_cluster(self.umap_embeddings_clustering, self.partioned_clusttering_size)
-        if not os.path.exists(self.path+"/results"): os.mkdir(self.path+"/results")
-        for i in range(len(self.clusters)):
-            draw_cluster(self.clusters[i], self.umap_embeddings_visulization[i], "time_frame_" + str(i),
-                         show_2d_plot=self.show_2d_plot,path=self.path)
-        self.cluster_df = clustered_df(self.slices, self.clusters)
-        self.clustered_df_cent, self.clustered_np_cent = clustered_cent_df(self.cluster_df)
-        self.dt, self.concat_cent = dt_creator(self.clustered_df_cent)
-        #print("Cluster Alignment Procedure is initialized...")
-        self.df_tm = alignment_procedure(self.dt, self.concat_cent)
-        self.list_tm = plot_alignment_no_show(self.df_tm, self.umap_embeddings_visulization, self.clusters,self.path)
-        self.documents_per_topic_per_time = rep_prep(self.cluster_df)
-        self.tokens, self.dictionary, self.corpus = text_processing(self.df.content.values)
-        #print("Topic Representation is initialized...")
-        self.output = ctfidf_rp(self.dictionary, self.documents_per_topic_per_time, num_doc=len(self.df), num_words=self.num_words)
-        #print("Topic Modeling is done")
+        print("Topic Modeling is done")
         self.evolving_topics=topic_evolution(self.list_tm, self.output)
         if save: self.save()
         self.slice_num = set(self.output["slice_num"])
@@ -304,41 +283,6 @@ class ANTM:
         # Showing the figure
         plt.savefig(self.path+"/results/evolving_topics.png")
         plt.show()
-
-    
-    
-    def get_cluster_info(self) :
-        # num_clusters : number of clusters found in each period
-        # number_of_outliers :  number of outlier documents in each period (probability == 0, or label == -1)
-        # number_of_ones : number of documents that were assigned to their clusters with a maximum membreship score (= 1)
-        # average_probabilities : average membership score per each cluster, in each period
-        # period_cluster_sizes : number of documents in each cluster, in each period
-        
-        num_clusters = []
-        cluster_sizes = []
-        number_of_outliers = []
-        number_of_ones = []
-        average_probabilities = []
-        period_cluster_sizes = []
-        for c,p in zip(self.clusters,self.cluster_proba) :
-            num_clusters.append(c.max()+1)
-            
-            number_of_outliers.append(np.count_nonzero(c == -1)) ## or np.count_nonzero(p == 0)
-            number_of_ones.append(np.count_nonzero(p == 1))
-            
-            avg_probs = []
-            cluster_id = np.unique(c)
-            cluster_id = cluster_id[cluster_id != -1]
-            for label in cluster_id:
-                label_probs = p[c == label]
-                cluster_size = len(label_probs)
-                cluster_sizes.append(cluster_size)
-                avg_prob = np.mean(label_probs)
-                avg_probs.append(avg_prob)
-            period_cluster_sizes.append(cluster_sizes)
-            average_probabilities.append(avg_probs)  
-            
-        return num_clusters,number_of_outliers,number_of_ones,average_probabilities,period_cluster_sizes
     
       
     def pretty_print_cluster_info(self) :
