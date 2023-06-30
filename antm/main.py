@@ -15,7 +15,7 @@ from antm.cm import coherence_model
 from antm.diversity_metrics import proportion_unique_words,pairwise_jaccard_diversity
 
 class ANTM:
-    def __init__(self, df, overlap, window_length, mode="data2vec", umap_dimension_size=5, umap_n_neighbors=15,
+    def __init__(self, df, overlap, window_length, mode="data2vec", umap_dimension_size=5, umap_n_neighbors=15, df_embedded=None, umap_embeddings_clustering=None, umap_embeddings_visulization=None,
                  partioned_clusttering_size=10, num_words=10, show_2d_plot=False,path=os.getcwd()):
         self.df = df
         self.overlap = overlap
@@ -31,9 +31,9 @@ class ANTM:
             if not os.path.exists(path): os.mkdir(path)
         self.path = path
 
-        self.df_embedded = None
-        self.umap_embeddings_clustering = None
-        self.umap_embeddings_visulization = None
+        self.df_embedded = df_embedded
+        self.umap_embeddings_clustering = umap_embeddings_clustering
+        self.umap_embeddings_visulization = umap_embeddings_visulization
         self.clusters=None
         self.slices=None
         self.arg1_umap=None
@@ -58,36 +58,53 @@ class ANTM:
         self.periodwise_pairwise_jaccard_diversity=None
         self.periodwise_topic_coherence=None
 
-    def fit(self,save=True):
-        print("contextual document embedding is initiated...")
-        self.df_embedded = contextual_embedding(self.df, mode=self.mode)
+    def fit(self, save=True):
+
+        # Contextual embedding
+        if self.df_embedded is None:
+            print("contextual document embedding is initiated...")
+            self.df_embedded = contextual_embedding(self.df, mode=self.mode)
+        else:
+            print("contextual document embedding provided ---> skip")
+
+        # Sliding window segmentation
         print("Sliding Window Segmentation is initialized...")
         self.slices, self.arg1_umap, self.arg2_umap = sws(self.df_embedded, self.overlap, self.window_length)
-        print("Aligned Dimension Reduction is initialized...")
-        self.umap_embeddings_clustering, self.umap_embeddings_visulization = aligned_umap(
-            self.arg1_umap, self.arg2_umap, n_neighbors=self.umap_n_neighbors,
-            umap_dimension_size=self.umap_dimension_size)
+
+        # Aligned dimensionality reduction
+        if self.umap_embeddings_clustering is None or self.umap_embeddings_visulization is None:
+            print("Aligned Dimension Reduction is initialized...")
+            self.umap_embeddings_clustering, self.umap_embeddings_visulization = aligned_umap(
+                self.arg1_umap, self.arg2_umap, n_neighbors=self.umap_n_neighbors,
+                umap_dimension_size=self.umap_dimension_size)
+        else:
+            print("umap embeddings provided ---> skip")
+
         print("Sequential Document-cluster association is initialized...")
-        self.clusters = hdbscan_cluster(self.umap_embeddings_clustering, self.partioned_clusttering_size)
-        if not os.path.exists(self.path+"/results"): os.mkdir(self.path+"/results")
+        self.clusters = hdbscan_cluster(self.umap_embeddings_clustering,
+                                                            self.partioned_clusttering_size)
+        if not os.path.exists(self.path + "/results"): os.mkdir(self.path + "/results")
         for i in range(len(self.clusters)):
             draw_cluster(self.clusters[i], self.umap_embeddings_visulization[i], "time_frame_" + str(i),
-                         show_2d_plot=self.show_2d_plot,path=self.path)
+                         show_2d_plot=self.show_2d_plot, path=self.path)
         self.cluster_df = clustered_df(self.slices, self.clusters)
         self.clustered_df_cent, self.clustered_np_cent = clustered_cent_df(self.cluster_df)
         self.dt, self.concat_cent = dt_creator(self.clustered_df_cent)
         print("Cluster Alignment Procedure is initialized...")
         self.df_tm = alignment_procedure(self.dt, self.concat_cent)
-        self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters,self.path)
+        self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters, self.path)
         self.documents_per_topic_per_time = rep_prep(self.cluster_df)
         self.tokens, self.dictionary, self.corpus = text_processing(self.df.content.values)
         print("Topic Representation is initialized...")
-        self.output = ctfidf_rp(self.dictionary, self.documents_per_topic_per_time, num_doc=len(self.df), num_words=self.num_words)
+        self.output = ctfidf_rp(self.dictionary, self.documents_per_topic_per_time, num_doc=len(self.df),
+                                num_words=self.num_words)
         print("Topic Modeling is done")
-        self.evolving_topics=topic_evolution(self.list_tm, self.output)
+        self.evolving_topics = topic_evolution(self.list_tm, self.output)
         if save: self.save()
-        self.slice_num = len(set(self.output["slice_num"]))
-        self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in range(1, self.slice_num + 1)]
+        self.slice_num = set(self.output["slice_num"])
+        self.topics = [self.output[self.output["slice_num"] == i].topic_representation.to_list() for i in
+                       self.slice_num]
+        self.topics = list(filter(None, self.topics))
         return self.topics
 
     def save(self):
