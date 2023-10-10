@@ -54,9 +54,7 @@ def draw_cluster(cluster_labels,umap,name,show_2d_plot,path):
     plt.scatter(data[0], data[1], c=data["C"])
     if not os.path.exists(path+"/results/partioned_clusters"): os.mkdir(path+"/results/partioned_clusters")
     plt.savefig(path+"/results/partioned_clusters/"+name+'.png')
-    if not show_2d_plot:
-        plt.close(fig)
-    plt.show()
+    plt.close(fig)
 
 def clustered_df(slices,clusters_labels):
     clustered_df=[]
@@ -142,7 +140,5 @@ def plot_alignment(df_tm,umap_embeddings_visualization,clusters_labels,path):
     fig = px.scatter_3d(x=ccs_df[0], y=ccs_df[1], z=ccs_df["win"],
                         color=ccs_df["evolving_topic"],color_continuous_scale=px.colors.sequential.Viridis)
     fig.update_layout(width=1000, height=1000)
-
-    fig.show()
     fig.write_image(path+"/results/fig_3D.png")
     return(list_tm)
