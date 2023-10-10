@@ -198,7 +198,6 @@ class ANTM:
             plt.legend()
 
         plt.savefig(self.path+'/results/random_topic_evolution.png')
-        plt.show()
 
     def save_evolution_topics_plots(self,display=False):
         for j in range(len(self.list_tm)):
@@ -225,7 +224,7 @@ class ANTM:
             if not os.path.exists(self.path+"/results/evolving_topics"): os.mkdir(self.path+"/results/evolving_topics")
             plt.savefig(self.path+'/results/evolving_topics/topic_evolution_' + str(j) + '.png')
             if display:
-                plt.show()
+                pass
             plt.close(fig)
 
     def plot_clusters_over_time(self):
@@ -252,7 +251,6 @@ class ANTM:
         plt.suptitle('Dynamic Document Embeddings and Clusters in each Time Frame')
         plt.savefig(self.path + "/results/partioned_topics.png")
         # Showing the figure
-        plt.show()
 
     def plot_evolving_topics(self):
 
@@ -278,7 +276,6 @@ class ANTM:
         plt.suptitle('Evolution of Evolving Topics')
         # Showing the figure
         plt.savefig(self.path+"/results/evolving_topics.png")
-        plt.show()
 
     def get_periodwise_puw_diversity(self):
         self.periodwise_puw_diversity=[proportion_unique_words(period, topk=self.num_words) for period in self.topics]
