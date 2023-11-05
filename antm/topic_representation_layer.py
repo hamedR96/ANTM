@@ -19,7 +19,7 @@ def ctf_idf_topics(docs_per_class,words,ctfidf,num_terms):
     topics=[]
     for label in docs_per_class:
         topic=[]
-        for index in ctfidf[int(label)].argsort()[-num_terms:]:
+        for index in ctfidf[int(label)].argsort()[:num_terms]:
             topic.append(words[index])
         topics.append(topic)
     return topics

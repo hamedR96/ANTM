@@ -12,7 +12,8 @@ def aligned_umap(arg1_umap,arg2_umap,n_neighbors=15,umap_dimension_size=5):
     metric="cosine",
     n_neighbors=n_neighbors,
     alignment_regularisation=0.1,
-    alignment_window_size=umap_dimension_size,
+    alignment_window_size=3,
+    n_components=umap_dimension_size,
     n_epochs=200,
     random_state=42,
     ).fit(arg1_umap, relations = arg2_umap)
@@ -21,18 +22,20 @@ def aligned_umap(arg1_umap,arg2_umap,n_neighbors=15,umap_dimension_size=5):
     for j in model_umap_clustering.embeddings_:
         umap_embeddings_clustering.append(pd.DataFrame(j))
 
-
-    model_umap_visualization = umap.aligned_umap.AlignedUMAP(
-    metric="cosine",
-    n_neighbors=n_neighbors,
-    alignment_regularisation=0.1,
-    alignment_window_size=2,
-    n_epochs=200,
-    random_state=42,
-    ).fit(arg1_umap, relations = arg2_umap)
-    umap_embeddings_visulization=[]
-    for j in model_umap_visualization.embeddings_:
-        umap_embeddings_visulization.append(pd.DataFrame(j))
+    if umap_dimension_size==2:
+        umap_embeddings_visulization=umap_embeddings_clustering.copy()
+    else:
+        model_umap_visualization = umap.aligned_umap.AlignedUMAP(
+        metric="cosine",
+        n_neighbors=n_neighbors,
+        alignment_regularisation=0.1,
+        alignment_window_size=3,
+        n_epochs=200,
+        random_state=42,
+        ).fit(arg1_umap, relations = arg2_umap)
+        umap_embeddings_visulization=[]
+        for j in model_umap_visualization.embeddings_:
+            umap_embeddings_visulization.append(pd.DataFrame(j))
 
     return umap_embeddings_clustering,umap_embeddings_visulization
 
@@ -110,7 +113,7 @@ def alignment_procedure(dt,concat_cent,umap_n_neighbor=2,umap_n_components=5,min
 
 
 
-def plot_alignment(df_tm,umap_embeddings_visualization,clusters_labels,path):
+def plot_alignment(df_tm,umap_embeddings_visualization,clusters_labels,path,show_3d_plot):
     tm = df_tm[["window_num", "cluster_num", "C"]]
     tm_copy = tm.copy()
     tm_copy.loc[:, "name"] = tm.apply(lambda row: str(row["window_num"]) + "-" + str(row["cluster_num"]) , axis=1)
@@ -142,7 +145,7 @@ def plot_alignment(df_tm,umap_embeddings_visualization,clusters_labels,path):
     fig = px.scatter_3d(x=ccs_df[0], y=ccs_df[1], z=ccs_df["win"],
                         color=ccs_df["evolving_topic"],color_continuous_scale=px.colors.sequential.Viridis)
     fig.update_layout(width=1000, height=1000)
-
-    fig.show()
+    if show_3d_plot:
+        fig.show()
     fig.write_image(path+"/results/fig_3D.png")
     return(list_tm)

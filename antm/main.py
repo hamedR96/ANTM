@@ -2,7 +2,7 @@ import glob
 import os
 import pickle
 import random
-
+import torch
 import pandas as pd
 from matplotlib import pyplot as plt
 from antm.text_processing import text_processing
@@ -15,8 +15,9 @@ from antm.cm import coherence_model
 from antm.diversity_metrics import proportion_unique_words,pairwise_jaccard_diversity
 
 class ANTM:
-    def __init__(self, df, overlap, window_length, mode="data2vec", umap_dimension_size=5, umap_n_neighbors=15, df_embedded=None, umap_embeddings_clustering=None, umap_embeddings_visulization=None,
-                 partioned_clusttering_size=10, num_words=10, show_2d_plot=False,path=os.getcwd()):
+    def __init__(self, df, overlap, window_length, mode="bert", umap_dimension_size=5, umap_n_neighbors=15,
+                 embedding_vectors=None, umap_embeddings_clustering=None, umap_embeddings_visulization=None,
+                 device=None , partioned_clusttering_size=10, num_words=10, show_2d_plot=False, show_3d_plot=False,path=os.getcwd()):
         self.df = df
         self.overlap = overlap
         self.window_length = window_length
@@ -31,9 +32,16 @@ class ANTM:
             if not os.path.exists(path): os.mkdir(path)
         self.path = path
 
-        self.df_embedded = df_embedded
+
+        if device==None:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device=device
+
+        self.embedding_vectors = embedding_vectors
         self.umap_embeddings_clustering = umap_embeddings_clustering
         self.umap_embeddings_visulization = umap_embeddings_visulization
+        self.df_embedded = None
         self.clusters=None
         self.slices=None
         self.arg1_umap=None
@@ -53,20 +61,20 @@ class ANTM:
         self.evolving_topics=None
         self.topics=None
         self.slice_num=None
-
+        self.show_3d_plot=show_3d_plot
         self.periodwise_puw_diversity=None
         self.periodwise_pairwise_jaccard_diversity=None
         self.periodwise_topic_coherence=None
 
     def fit(self, save=True):
-
         # Contextual embedding
-        if self.df_embedded is None:
+        if self.embedding_vectors is None:
             print("contextual document embedding is initiated...")
-            self.df_embedded = contextual_embedding(self.df, mode=self.mode)
+            self.df_embedded = contextual_embedding(self.df, mode=self.mode,device=self.device)
         else:
             print("contextual document embedding provided ---> skip")
-
+            self.df["embedded"]=self.embedding_vectors
+            self.df_embedded=self.df
         # Sliding window segmentation
         print("Sliding Window Segmentation is initialized...")
         self.slices, self.arg1_umap, self.arg2_umap = sws(self.df_embedded, self.overlap, self.window_length)
@@ -92,7 +100,7 @@ class ANTM:
         self.dt, self.concat_cent = dt_creator(self.clustered_df_cent)
         print("Cluster Alignment Procedure is initialized...")
         self.df_tm = alignment_procedure(self.dt, self.concat_cent)
-        self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters, self.path)
+        self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters, self.path,self.show_3d_plot)
         self.documents_per_topic_per_time = rep_prep(self.cluster_df)
         self.tokens, self.dictionary, self.corpus = text_processing(self.df.content.values)
         print("Topic Representation is initialized...")
