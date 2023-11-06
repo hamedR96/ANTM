@@ -158,7 +158,7 @@ class ANTM:
 
         self.df_tm=pd.read_pickle(self.path+"/model/df_tm")
 
-        self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters,self.path)
+        self.list_tm = plot_alignment(self.df_tm, self.umap_embeddings_visulization, self.clusters,self.path,self.show_3d_plot)
 
         for i in range(len(self.clusters)):
             draw_cluster(self.clusters[i], self.umap_embeddings_visulization[i], "time_frame_" + str(i),
